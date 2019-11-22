@@ -900,7 +900,7 @@ export const views: Views = {
         },
         personalInfo: {
             subTitle: "Edit and export your personal profile and manage linked accounts",
-            title: "Personal info"
+            title: "Personal Info"
         },
         privacy: {
             subTitle: "",
