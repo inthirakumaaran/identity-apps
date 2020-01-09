@@ -1,0 +1,3004 @@
+Index: identity-apps/apps/admin-portal/src/configs/routes.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/configs/routes.ts	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/configs/routes.ts	(date 1575624921553)
+@@ -17,14 +17,19 @@
+  */
+ 
+ import {
++    AddAppPage,
++    ApplicationPage,
++    ApplistingPage,
+     HomePage,
+-    PageNotFound
++    PageNotFound,
++    SelectAppPage
+ } from "../pages";
+ 
+ /**
+  * Interface to handle route types.
+  */
+ interface Route {
++    exact: any;
+     component: any;
+     icon?: string;
+     name: string;
+@@ -43,13 +48,51 @@
+         name: "Overview",
+         path: "/overview",
+         protected: true,
++        exact: false,
++        showOnSidePanel: true,
++    },
++    {
++        component: ApplicationPage,
++        icon: "account",
++        name: "Applications",
++        path: "/application",
++        protected: true,
++        exact: true,
+         showOnSidePanel: true,
+     },
+     {
++        component: ApplistingPage,
++        icon: "account",
++        name: "Application-listing",
++        path: "/application/:id",
++        protected: true,
++        exact: true,
++        showOnSidePanel: false,
++    },
++    {
++        component: SelectAppPage,
++        icon: "account",
++        name: "Select New App type",
++        path: "/application/new/template",
++        protected: true,
++        exact: true,
++        showOnSidePanel: false,
++    },
++    {
++        component: AddAppPage,
++        icon: "account",
++        name: "Register New app",
++        path: "/application/new/:id",
++        protected: true,
++        exact: true,
++        showOnSidePanel: false,
++    },
++    {
+         component: PageNotFound,
+         name: "404",
+         path: null,
+         protected: true,
++        exact: false,
+         showOnSidePanel: false,
+     },
+ ];
+Index: identity-apps/apps/admin-portal/src/configs/ui.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/configs/ui.ts	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/configs/ui.ts	(date 1575615781956)
+@@ -17,6 +17,7 @@
+  */
+ 
+ import {
++    AppSample,
+     CodeIcon,
+     DummyUser,
+     HomeTileIcons,
+@@ -47,6 +48,8 @@
+ export const SettingsSectionIcons = SettigsSectionIconSet;
+ export const MFAIcons = MFAIconSet;
+ 
++export const SampleApp = AppSample;
++
+ export const TitleText: TitleTextType = "Identity Server";
+ export const customCSS: CustomCSSType = {
+     dark: {
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-register-portal.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-register-portal.tsx	(date 1572928856159)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-register-portal.tsx	(date 1572928856159)
+@@ -0,0 +1,49 @@
++import React, {Component} from "react";
++import {Button, Grid, Header, Portal, Segment} from "semantic-ui-react";
++import Appsteps from "./app-steps";
++import AddGeneralSetting from "./add-general-setting";
++
++class PortalExampleControlled extends Component {
++    public state = {open: false};
++
++    public handleClose = () => this.setState({open: false});
++    public handleOpen = () => this.setState({open: true});
++
++    public render() {
++        const {open} = this.state;
++
++        return (
++            <Grid columns={2}>
++                <Grid.Column>
++                    <Button
++                        circular
++                        content="Register"
++                        disabled={open}
++                        positive={false}
++                        onClick={this.handleOpen}
++                    />
++                    <Portal onClose={this.handleClose} open={open}>
++                        <Segment
++                            style={{
++                                width: "60%",
++                                // tslint:disable-next-line:object-literal-sort-keys
++                                height: "60%",
++                                left: "30%",
++                                top: "10%",
++                                position: "fixed",
++                                zIndex: 1000,
++                            }}
++                        >
++                            {/*<Header>This is a controlled portal</Header>*/}
++                            {/*<p>Portals have tons of great callback functions to hook into.</p>*/}
++                            {/*<p>To close, simply click the close button or click away</p>*/}
++                            <AddGeneralSetting/>
++                        </Segment>
++                    </Portal>
++                </Grid.Column>
++            </Grid>
++        );
++    }
++}
++
++export default PortalExampleControlled;
+Index: identity-apps/modules/theme/src/themes/default/elements/list.variables
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/modules/theme/src/themes/default/elements/list.variables	(date 1575612737000)
++++ identity-apps/modules/theme/src/themes/default/elements/list.variables	(date 1575616035761)
+@@ -27,3 +27,7 @@
+ 
+ /* List Padding */
+ @settingsSectionInnerListHeaderPaddingLeft: 37px;
++@borderNewBgColor: #f7f7f7;
++@borderNewPadding: 6px 15px;
++@borderNewMarginBottom: 9px;
++@borderNewBoxShadow: 2px 1px 1px #ccc;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-details-general.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-details-general.tsx	(date 1575470350439)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-details-general.tsx	(date 1575470350439)
+@@ -0,0 +1,41 @@
++import React, {Component, FunctionComponent, useState} from "react";
++import {Button, Divider, Form, Grid, Header, Portal, Segment} from "semantic-ui-react";
++
++interface GeneralDetailsProps {
++    name: string;
++    description: string;
++}
++const GeneralDetails: FunctionComponent<GeneralDetailsProps> = (props): JSX.Element => {
++    return (
++        <div>
++            <Form>
++                <Grid className="details-grid">
++                    <Grid.Row columns={1} className="details-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={3} className="details-column">
++                            <label className="tag">Name</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.name}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                            <Grid.Column mobile={16} tablet={16} computer={3} className="details-column">
++                                <label className="tag">Description</label>
++                            </Grid.Column>
++                            <Grid.Column mobile={16} tablet={16} computer={4}>
++                                <label className="value">{props.description}</label>
++                            </Grid.Column>
++                    </Grid.Row>
++                </Grid>
++                <Divider hidden/>
++            </Form>
++        </div>
++    );
++
++};
++
++export default GeneralDetails;
+Index: identity-apps/modules/theme/src/themes/default/elements/list.overrides
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/modules/theme/src/themes/default/elements/list.overrides	(date 1575612737000)
++++ identity-apps/modules/theme/src/themes/default/elements/list.overrides	(date 1575616035768)
+@@ -28,3 +28,131 @@
+         }
+     }
+ }
++
++.ui.list {
++    &.application-list {
++        .application-list-item {
++            margin: 15px 2px;
++            padding: 10px;
++            position: relative;
++            border-radius: @defaultBorderRadius;
++            transition: all 0.1s;
++
++            .action-bar {
++                .enable-toggle {
++                    margin-right: 10px;
++
++                    label {
++                        &::before {
++                            background-color: #c5c1c1 !important;
++                        }
++                    }
++                }
++            }
++            .delete-icon {
++                padding-top:70px;
++                .enable-toggle {
++                    margin-right: 10px;
++
++                    label {
++                        &::before {
++                            background-color: #c5c1c1 !important;
++                        }
++                    }
++                }
++            }
++            .app-list-row{
++              position: relative;
++              padding: 0px;
++
++            }
++            .app-toggle{
++                background-color: #f4f7f9;
++                padding: 2%;
++            }
++            .app-actions{
++               background-color: #dae2e7;
++               padding: 2% 1%;
++            }
++
++            .app-content {
++               display: inline-block;
++               padding-left: 2%;
++               padding-top:2%;
++               background-color: #f4f7f9;
++                &:hover {
++                   background-color: darken(#f4f7f9, 10);
++                  }
++            }
++            .app-details {
++               padding: 0px;
++               padding-top: 0px;
++               padding-bottom: 10px;
++               background-color: #f4f7f9;
++               width: 100%;
++            }
++        }
++    }
++}
++
++.ui.list {
++    &.claim-list {
++        .claim-list-item {
++            margin: 15px 2px;
++            padding: 10px;
++            position: relative;
++            border-radius: @defaultBorderRadius;
++            transition: all 0.1s;
++            height: 2.7em;
++            background-color: #f4f7f9;
++            color: #686f77;
++
++            .action-bar {
++                .claim-icon {
++                    margin: 5% 20%;
++                     &:hover {
++                         background-color: darken(#f4f7f9, 8);
++                      }
++                }
++
++                padding-left: 1em;
++                margin-top: 5px;
++            }
++            .ui.grid {
++              .app-list-row{
++                position: relative;
++                padding: 0px;
++
++                 .claim-list-content {
++                   display: inline-block;
++                   padding-left: 3%;
++
++                   .sub-content {
++                       font-size: 0.9em;
++                       color: #908e8eee;
++                   }
++
++                   .main-content {
++                        font-size: 0.9em;
++                   }
++                }
++
++              }
++            }
++
++            .app-actions{
++               display: inline-block;
++               padding: 2% 1%;
++            }
++
++            .app-content {
++               display: inline-block;
++               padding-left: 2%;
++               padding-top:2%;
++            }
++            &.dark {
++               background-color: darken(#f4f7f9, 15);
++            }
++        }
++    }
++}
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-details-advance.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-details-advance.tsx	(date 1575471347584)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-details-advance.tsx	(date 1575471347584)
+@@ -0,0 +1,84 @@
++import React, {Component, FunctionComponent, useState} from "react";
++import {Button, Divider, Form, Grid, Header, Portal, Segment} from "semantic-ui-react";
++
++interface AdvanceDetailsProps {
++    clientID: string;
++    secret: string;
++    responseType: string;
++    grantType: string;
++    callbackURL: string;
++}
++const AdvanceDetails: FunctionComponent<AdvanceDetailsProps> = (props): JSX.Element => {
++    return (
++        <div>
++            <Form>
++                <Grid className="details-grid">
++                    <Grid.Row columns={1} className="details-row">
++                        <Grid.Column mobile={16} tablet={16} computer={3} className="details-column">
++                            <label className="tag">Basics</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-advance-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={5} className="details-column">
++                            <label className="tag">CLIENT ID</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.clientID}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-advance-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={5} className="details-column">
++                            <label className="tag">CLIENT SECRET</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.secret}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-advance-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={5} className="details-column">
++                            <label className="tag">RESPONSE TYPE</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.responseType}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-advance-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={5} className="details-column">
++                            <label className="tag">ALLOWED GRANT TYPES</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.grantType}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-advance-row">
++                        <Grid.Column mobile={16} tablet={16} computer={2}>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={5} className="details-column">
++                            <label className="tag">CALLBACK URL</label>
++                        </Grid.Column>
++                        <Grid.Column mobile={16} tablet={16} computer={4}>
++                            <label className="value">{props.callbackURL}</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1} className="details-row">
++                        <Grid.Column mobile={16} tablet={16} computer={3} className="details-column">
++                            <label className="tag">END POINTS</label>
++                        </Grid.Column>
++                    </Grid.Row>
++                </Grid>
++                <Divider hidden/>
++            </Form>
++        </div>
++    );
++
++};
++
++export default AdvanceDetails;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/add-general-setting.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/add-general-setting.tsx	(date 1575018700383)
++++ identity-apps/apps/admin-portal/src/components/app-settings/add-general-setting.tsx	(date 1575018700383)
+@@ -0,0 +1,85 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import React, {FunctionComponent, MouseEvent, useState} from "react";
++import {Button, Divider, Form, Grid, Segment} from "semantic-ui-react";
++import AdvanceSetting from "./add-advance-setting";
++import Appsteps from "./app-steps";
++
++const addGeneralSettings = (props): JSX.Element => {
++
++    const [viewNext, setNext] = useState({
++        visible: false
++    });
++    const {
++        name,
++        description,
++        logo
++    } = props;
++
++    const showNext = () => {
++        setNext(
++            {visible: true}
++        );
++    };
++
++    return (
++        <div style={{margin: "auto"}}>
++            <Form className={"addGeneral main-content-inner"}>
++                <Grid>
++                    <Grid.Row columns={1}>
++                        <Grid.Column mobile={16} tablet={16} computer={16} >
++                            <Form.Input
++                                id="appDescription"
++                                label="Name"
++                                placeholder={"Enter the name"}
++                            />
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1}>
++                        <Grid.Column mobile={16} tablet={16} computer={16}>
++                            <Form.TextArea label="Description" placeholder="Enter the description" />
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1}>
++                        <Grid.Column mobile={16} tablet={16} computer={16}>
++                            <Form.Input
++                                id="appDescription"
++                                label="Upload Logo "
++                                placeholder={"Upload the app logo"}
++                                type="file"
++                            />
++                        </Grid.Column>
++                    </Grid.Row>
++                </Grid>
++                <Divider hidden/>
++                {/*<Button primary size="small" onClick={showNext}>*/}
++                {/*    Next*/}
++                {/*</Button>*/}
++                {/*{viewNext.visible ? <AdvanceSetting/> : null}*/}
++                {/*<Divider hidden/>*/}
++                {/*<div style={{marginBottom: "10px"}}>*/}
++                {/*    <Appsteps step={"General Settings"}/>*/}
++                {/*</div>*/}
++            </Form>
++        </div>
++    );
++
++};
++
++export default addGeneralSettings;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/application-builder.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/application-builder.tsx	(date 1574849868216)
++++ identity-apps/apps/admin-portal/src/components/app-settings/application-builder.tsx	(date 1574849868216)
+@@ -0,0 +1,95 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++import React, {FunctionComponent, MouseEvent} from "react";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Form, Grid, Image, Tab} from "semantic-ui-react";
++import {UserImageDummy} from "../../../../user-portal/src/components/shared";
++import {SampleApp} from "../../configs/ui";
++import history from "../../helpers/history";
++import {InnerPageLayout} from "../../layouts";
++// import {FunctionComponent} from "react";
++import AdvanceSettings from "./advance-setting";
++import AttributeMapping from "./claim-mapping";
++import {Dummy} from "./dummy-app-builder";
++import GeneralSettings from "./general-settings";
++
++// // tslint:disable-next-line:no-empty-interface
++// interface ApplicationBuilderProps {
++//     // name: string;
++//     // description: string;
++// }
++
++const navigate = (): void => {
++    history.push("/application");
++};
++
++const getAppName = (): string => {
++    const path = history.location.pathname.split("/");
++    const appName = path[path.length - 1];
++    return appName;
++};
++
++const panes = [
++    {
++        menuItem: "Profile",
++        render: () => <Tab.Pane attached={false}>{<GeneralSettings name={getAppName()} description={"trial"}
++                                                                   logo={"dfa"}/>}</Tab.Pane>,
++    },
++    {
++        menuItem: "Settings",
++        render: () => <Tab.Pane attached={false}>{<AdvanceSettings name={"kumar"} description={"trial"}/>}</Tab.Pane>,
++    },
++    {
++        menuItem: "Attribute Mapping",
++        render: () => <Tab.Pane attached={false}><Dummy/></Tab.Pane>,
++    },
++    {
++        menuItem: "Connections",
++        render: () => <Tab.Pane attached={false}>connections</Tab.Pane>,
++    },
++];
++
++export const AppBuilder: FunctionComponent<{}> = (props): JSX.Element => {
++    return (
++        <div>
++            <Grid>
++                <Grid.Row>
++                    <Grid.Column width={2}>
++                        <Image src={ SampleApp } size="small" circular />
++                    </Grid.Column>
++                    <Grid.Column width={7} >
++                        <h1 style={{fontVariant: "small-caps"}}>{getAppName()}</h1>
++                        <p>This is for reference</p>
++                    </Grid.Column>
++                </Grid.Row>
++                <Grid.Row>
++                    <Grid.Column width={16}>
++                        <Tab menu={{secondary: true, pointing: true}} panes={panes}/>
++                        <Divider hidden/>
++                        <Button primary type="submit" size="small">
++                            Update
++                        </Button>
++                        <Button type="submit" size="small" onClick={navigate}>
++                            Cancel
++                        </Button>
++                    </Grid.Column>
++                </Grid.Row>
++            </Grid>
++        </div>
++    );
++};
+Index: identity-apps/apps/admin-portal/src/locales/en/views.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/locales/en/views.json	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/locales/en/views.json	(date 1575615781950)
+@@ -3,6 +3,10 @@
+         "title": "Welcome, {{firstName}}",
+         "subTitle": "Manage and configure your user settings to customize the Identity Server experience"
+     },
++    "applicationPage": {
++        "title": "Application",
++        "subTitle": "Manage your applications here"
++    },
+     "404": {
+         "title": "It looks like you're lost. :(",
+         "subTitle": "The page you're looking for isn't here."
+Index: identity-apps/apps/admin-portal/webpack.config.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/webpack.config.js	(date 1575612737000)
++++ identity-apps/apps/admin-portal/webpack.config.js	(date 1575616035766)
+@@ -33,7 +33,7 @@
+     const homePagePath = '/overview';
+     const serverHost = 'https://localhost:9443';
+     const clientHost = (env.NODE_ENV === 'prod') ? serverHost : `https://localhost:${devServerPort}`;
+-    const externalLoginClientID = (env.NODE_ENV === 'prod') ? 'ADMIN_PORTAL' : 'ADMIN_PORTAL';
++    const externalLoginClientID = (env.NODE_ENV === 'prod') ? 'ADMIN_PORTAL' : 'dFcIqN3hgklR3MIdst_z7pMFAp4a';
+     const externalLoginCallbackURL = `${clientHost}/${basename}/login`;
+     const externalLogoutCallbackURL = `${clientHost}/${basename}/logout`;
+ 
+Index: identity-apps/apps/admin-portal/src/pages/new-application.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/new-application.tsx	(date 1575624921547)
++++ identity-apps/apps/admin-portal/src/pages/new-application.tsx	(date 1575624921547)
+@@ -0,0 +1,179 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import {
++    AuthenticateSessionUtil,
++    AuthenticateUserKeys
++} from "@wso2is/authentication";
++import {useState} from "react";
++import * as React from "react";
++import {useTranslation} from "react-i18next";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Grid, Image, List} from "semantic-ui-react";
++import {UserImageDummy} from "../../../user-portal/src/components/shared";
++import AdvanceSettings from "../components/app-settings/add-advance-setting";
++import GeneralSettings from "../components/app-settings/add-general-setting";
++import appRegister from "../components/app-settings/app-steps";
++import RegisterApp from "../components/app-settings/app-steps";
++import RegisterRound from "../components/app-settings/app-steps-round";
++import ListExampleFloated from "../components/app-settings/application-list";
++import history from "../helpers/history";
++import {DefaultPageLayout, InnerPageLayout} from "../layouts";
++import {renderIntoDocument} from "react-dom/test-utils";
++import {AttributeMapping} from "../components/app-settings";
++
++/**
++ * Overview page.
++ *
++ * @return {JSX.Element}
++ */
++const getAppName = (): string => {
++    const path = history.location.pathname.split("/");
++    const appName = path[path.length - 1];
++    return appName;
++};
++
++export const AddAppPage = (): JSX.Element => {
++
++    const [viewStep, setStep] = useState({
++        step: "Profile",
++        // tslint:disable-next-line:object-literal-sort-keys
++        forwardButton: "true"
++    });
++
++    const steps = ["exit", "Profile", "Setting", "Advance Settings"];
++
++    const stepForward = () => {
++        const currentStep = viewStep.step;
++        const currentIndex = steps.indexOf(currentStep);
++        if ((currentIndex + 1) < steps.length) {
++            const newstep = steps[currentIndex + 1];
++            setStep(
++                {
++                    step: newstep,
++                    // tslint:disable-next-line:object-literal-sort-keys
++                    forwardButton: "true"
++                }
++            );
++        } else {
++            // setStep(
++            //     {
++            //         step: currentStep,
++            //         // tslint:disable-next-line:object-literal-sort-keys
++            //         forwardButton: "false"
++            //     }
++            // );
++            history.push("/application/new");
++        }
++    };
++
++    const stepBackword = () => {
++        const currentStep = viewStep.step;
++        const currentIndex = steps.indexOf(currentStep);
++        if ((currentIndex - 1) > 0) {
++            const newstep = steps[currentIndex - 1];
++            setStep(
++                {
++                    step: newstep,
++                    // tslint:disable-next-line:object-literal-sort-keys
++                    forwardButton: "true"
++                }
++            );
++        } else {
++            history.push("/application");
++        }
++    };
++ // todo    change this logic
++    const register = () => history.push("/application");
++
++    // @ts-ignore
++    return (
++          <DefaultPageLayout
++            pageTitle={"Register application"}
++            pageDescription={""}
++            pageTitleTextAlign={"center"}>
++            {/* tslint:disable-next-line:max-line-length */}
++                        {viewStep.step === "Profile" ?
++                            <Grid>
++                            <Grid.Row>
++                                <Grid.Column> <RegisterRound step={"Profile"}
++                                         list={steps.slice(1, steps.length)}
++                                         next={stepForward}
++                                         enableForward={viewStep.forwardButton}
++                                         back={stepBackword}>
++                                <GeneralSettings/></RegisterRound>
++                                </Grid.Column></Grid.Row>
++                            <Grid.Row>
++                                <Grid.Column width={11}/>
++                                <Grid.Column width={3} className="last-column">
++                                        <Button primary type="submit" size="small" onClick={stepForward}>
++                                            Next
++                                        </Button>
++                                </Grid.Column>
++                            </Grid.Row>
++                            </Grid> : null}
++                        {viewStep.step === "Setting" ?
++                            <Grid>
++                            <Grid.Row>
++                                <Grid.Column >
++                                    <RegisterRound step={"Setting"}
++                                         list={steps.slice(1, steps.length)}
++                                         next={stepForward}
++                                         enableForward={viewStep.forwardButton}
++                                         back={stepBackword}>
++                                        <AdvanceSettings/>
++                                    </RegisterRound>
++                                </Grid.Column>
++                            </Grid.Row>
++                            <Grid.Row>
++                                <Grid.Column width={12}/>
++                                <Grid.Column width={3} className="last-column">
++                                    <Button primary type="submit" size="small" onClick={stepForward}>
++                                        Next
++                                    </Button>
++                                </Grid.Column>
++                            </Grid.Row>
++                            </Grid> : null}
++                        {viewStep.step === "Advance Settings" &&
++                            <Grid>
++                            <Grid.Row>
++                                <Grid.Column><RegisterRound step={"Advance Settings"}
++                                         list={steps.slice(1, steps.length)}
++                                         next={stepForward}
++                                         enableForward={viewStep.forwardButton}
++                                         back={stepBackword}>
++                                    <AttributeMapping/></RegisterRound>
++                                </Grid.Column>
++                            </Grid.Row>
++                            <Grid.Row>
++                                <Grid.Column width={10}/>
++                                <Grid.Column width={5} className="last-column">
++                                    <Button type="submit" size="small" onClick={stepForward}>
++                                        Advance Settings
++                                    </Button>
++                                    <Button primary type="submit" size="small" onClick={register}>
++                                        Finish
++                                    </Button>
++                                </Grid.Column>
++                            </Grid.Row>
++                            </Grid>}
++          </DefaultPageLayout>
++    );
++};
++
++export default AddAppPage;
+Index: identity-apps/apps/admin-portal/src/pages/index.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/index.ts	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/pages/index.ts	(date 1573021597608)
+@@ -18,3 +18,7 @@
+ 
+ export * from "./errors/404";
+ export * from "./home";
++export * from "./application";
++export * from "./app-listing";
++export * from "./new-application";
++export * from "./new-selection-application";
+Index: identity-apps/apps/admin-portal/src/components/index.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/index.ts	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/components/index.ts	(date 1575625939548)
+@@ -23,3 +23,4 @@
+ export * from "./ui";
+ export * from "./icon";
+ export * from "./side-panel";
++export * from "./app-settings/index";
+Index: identity-apps/apps/admin-portal/src/app.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/app.tsx	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/app.tsx	(date 1575615861823)
+@@ -46,14 +46,17 @@
+                         } */}
+                         <Switch>
+                             <Redirect exact path="/" to={APP_LOGIN_PATH} />
++                            {/* tslint:disable-next-line:jsx-alignment */}
+                             <Route path={APP_LOGIN_PATH} render={() => {
+                                 signIn();
+                                 return null;
+-                            }} />
++                                // tslint:disable-next-line:jsx-alignment
++                            } } />
+                             <Route path="/logout" render={() => {
+                                 signOut();
+                                 return null;
+-                            }} />
++                                // tslint:disable-next-line:jsx-alignment
++                            } } />
+                             {
+                                 routes.map((route, index) => {
+                                     return (
+@@ -61,6 +64,7 @@
+                                             (
+                                                 <ProtectedRoute
+                                                     component={ route.component }
++                                                    exact={ route.exact }
+                                                     path={ route.path }
+                                                     key={ index }
+                                                 />
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-steps-round.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-steps-round.tsx	(date 1575374737654)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-steps-round.tsx	(date 1575374737654)
+@@ -0,0 +1,72 @@
++import React from "react";
++
++// tslint:disable-next-line:no-submodule-imports
++import {Simulate} from "react-dom/test-utils";
++import {Button, Form, Grid, Icon, Step} from "semantic-ui-react";
++import history from "../../helpers/history";
++import {InnerPageLayout} from "../../layouts";
++import {SidePanelWrapper} from "../side-panel";
++import transitionEnd = Simulate.transitionEnd;
++import AdvanceSettings from "./advance-setting";
++
++const createSteps = (list, active) => {
++    const TotalList = [...list];
++    return TotalList.map((item) => {
++        const index = list.indexOf(active);
++        const bool = list.indexOf(item) < index;
++        // tslint:disable-next-line:no-console
++        if (item === active) {
++            return (<li  className="active"> {list.indexOf(item) + 1} </li>);
++        } else {
++            return (<li> {list.indexOf(item) + 1}</li>);
++        }
++    });
++};
++
++const appRegisterRound = (props) => {
++    const totalSteps = props.list;
++    const navigate = (): void => {
++        history.push("/application");
++    };
++    return (
++        <Grid className={"register-progress"}>
++            <Grid.Row >
++                <Grid.Column width={15}>
++                    <Icon
++                        link
++                        size="large"
++                        onClick={props.back}
++                        color="grey"
++                        name="arrow left"
++                    />
++                </Grid.Column>
++                {/*<Grid.Column width={1} className="last-column">*/}
++                {/*    {props.enableForward ?*/}
++                {/*        <Icon*/}
++                {/*            link*/}
++                {/*            size="large"*/}
++                {/*            onClick={props.next}*/}
++                {/*            color="grey"*/}
++                {/*            name="arrow right"*/}
++                {/*        /> : null}*/}
++                {/*</Grid.Column>*/}
++            </Grid.Row>
++            <Grid.Row>
++                <Grid.Column width={2}/>
++                <Grid.Column width={10} style={{margin: "auto"}}>
++                    {props.children}
++                </Grid.Column>
++            </Grid.Row>
++            <Grid.Row  className={"register-progress-row"}
++                       style={{bottom: "0", width: "100%", position: "fixed", marginLeft: "20%"}}>
++                <Grid.Column width={16}>
++                    <div className="wizard-steps">
++                        {createSteps(totalSteps, props.step)}
++                    </div>
++                </Grid.Column>
++            </Grid.Row>
++        </Grid>
++    );
++};
++
++export default appRegisterRound;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-new-details.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-new-details.tsx	(date 1575471240363)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-new-details.tsx	(date 1575471240363)
+@@ -0,0 +1,81 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++import React, {FunctionComponent, MouseEvent} from "react";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Form, Grid, Image, Tab} from "semantic-ui-react";
++import {UserImageDummy} from "../../../../user-portal/src/components/shared";
++import {SampleApp} from "../../configs/ui";
++import history from "../../helpers/history";
++import {InnerPageLayout} from "../../layouts";
++// import {FunctionComponent} from "react";
++import AdvanceSettings from "./advance-setting";
++import AttributeMapping from "./claim-mapping";
++import {Dummy} from "./dummy-app-builder";
++import GeneralSettings from "./general-settings";
++import GeneralDetails from "./app-details-general";
++import AdvanceDetails from "./app-details-advance";
++
++// // tslint:disable-next-line:no-empty-interface
++// interface ApplicationBuilderProps {
++//     // name: string;
++//     // description: string;
++// }
++
++interface AppDetailsProps {
++    appName?: string;
++}
++
++const panes = (props) => {
++
++    return [
++        {
++            menuItem: "Profile",
++            render: () => <Tab.Pane attached={false}><GeneralDetails name={props.appName}
++                                                                     description={"show the demo"}/></Tab.Pane>,
++        },
++        {
++            menuItem: "Settings",
++
++            render: () => <Tab.Pane attached={false}>
++                <AdvanceDetails callbackURL="https://wso2.com" clientID="admin-portal" grantType="Authorization code"
++                                responseType="code" secret={"dakfakjd"}/></Tab.Pane>,
++        },
++        {
++            menuItem: "Attributes",
++            render: () => <Tab.Pane attached={false}>mapping</Tab.Pane>,
++        },
++        {
++            menuItem: "Connections",
++            render: () => <Tab.Pane attached={false}>connections</Tab.Pane>,
++        },
++    ];
++};
++
++export const AppDetails: FunctionComponent<AppDetailsProps> = (props): JSX.Element => {
++    return (
++        <div>
++            <Grid>
++                <Grid.Row>
++                    <Grid.Column width={16}>
++                        <Tab menu={{secondary: true, pointing: true}} panes={panes(props)}/>
++                    </Grid.Column>
++                </Grid.Row>
++            </Grid>
++        </div>
++    );
++};
+Index: identity-apps/apps/admin-portal/src/components/app-settings/advance-setting.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/advance-setting.tsx	(date 1575625662933)
++++ identity-apps/apps/admin-portal/src/components/app-settings/advance-setting.tsx	(date 1575625662933)
+@@ -0,0 +1,95 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import React, {FunctionComponent, MouseEvent, useState} from "react";
++import {Button, Divider, Form, Grid} from "semantic-ui-react";
++import {SettingsSection} from "../../../../user-portal/src/components/shared";
++import OIDCform from "./oidcform";
++import SAMLform from "./samlform";
++
++interface AdvanceSettingsProps {
++    name: string;
++    description: string;
++}
++
++const AdvanceSettings: FunctionComponent<AdvanceSettingsProps> = (props): JSX.Element => {
++    const {
++        name,
++        description,
++    } = props;
++
++    const [ editingForm, setEditingForm ] = useState({
++        OIDCview: false
++    });
++
++    const [ editingSAMLForm, setEditingSAMLForm ] = useState({
++        SAMLview: false
++    });
++
++    const renderODIC = (): void => {
++        // tslint:disable-next-line:no-console
++        setEditingForm(
++            {OIDCview: true}
++        );
++    };
++
++    const closeOIDC = () => {
++        setEditingForm(
++            {OIDCview: false}
++        );
++    };
++
++    const renderSAML = (): void => {
++        // tslint:disable-next-line:no-console
++        setEditingSAMLForm(
++            {SAMLview: true}
++        );
++    };
++
++    const closeSAML = () => {
++        setEditingSAMLForm(
++            {SAMLview: false}
++        );
++    };
++
++    return (
++        <div>
++            <SettingsSection
++                header="OAuth /OpenId"
++                description="configure advance settings"
++                primaryAction="update"
++                onPrimaryActionClick={renderODIC}
++                showActionBar={!editingForm.OIDCview}
++            >
++                {editingForm.OIDCview && <OIDCform cancelView={closeOIDC}/>}
++            </SettingsSection>
++            <SettingsSection
++                header="SAML"
++                description="set saml"
++                primaryAction="update"
++                onPrimaryActionClick={renderSAML}
++                showActionBar={!editingSAMLForm.SAMLview}
++            >
++                {editingSAMLForm.SAMLview && <SAMLform cancelView={closeSAML}/>}
++            </SettingsSection>
++        </div>
++    );
++
++};
++
++export default AdvanceSettings;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/addURLcomponent.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/addURLcomponent.tsx	(date 1574833143788)
++++ identity-apps/apps/admin-portal/src/components/app-settings/addURLcomponent.tsx	(date 1574833143788)
+@@ -0,0 +1,89 @@
++import React, {Component} from "react";
++import {
++    Button,
++    Checkbox,
++    Divider,
++    Dropdown,
++    Form,
++    Grid,
++    Header,
++    Message,
++    Portal,
++    Segment,
++    TextArea
++} from "semantic-ui-react";
++
++interface AddURLProps {
++    label: string;
++    id: string;
++    placeholder: string;
++}
++
++class AddURL extends Component<AddURLProps> {
++
++    public state = {
++        changeText: "",
++        value: ""
++    };
++
++    public handleChange = (event) => {
++       this.setState(
++           {changeText : event.target.value}
++       );
++    };
++
++    public addValue = () => {
++
++        if (this.state.value === "") {
++            this.setState(
++                {
++                    value: this.state.changeText,
++                    changeText : ""
++                }
++            );
++        } else {
++            this.setState(
++                {
++                    value: this.state.value + "," + this.state.changeText,
++                    changeText : ""
++                }
++            );
++        }
++    }
++
++    public render() {
++        return (
++            <>
++                <Grid.Row  columns={1}>
++                    <Grid.Column mobile={16} tablet={16} computer={14}>
++                        <label>{this.props.label}</label>
++                    </Grid.Column>
++                </Grid.Row>
++                <Grid.Row columns={2}>
++                    <Grid.Column mobile={16} tablet={16} computer={10}>
++                        {/* tslint:disable-next-line:max-line-length */}
++                        <input type="url" pattern="https?://.+" value={this.state.changeText} onChange={this.handleChange} placeholder={this.props.placeholder}/>
++                    </Grid.Column>
++                    <Grid.Column mobile={16} tablet={16} computer={4}>
++                        {/* tslint:disable-next-line:no-unused-expression */}
++                        <Button onClick={this.addValue}>ADD URL</Button>
++                    </Grid.Column>
++                </Grid.Row>
++                <Grid.Row  columns={1}>
++                    <Grid.Column mobile={16} tablet={16} computer={10}>
++                        {/* tslint:disable-next-line:max-line-length */}
++                        {/*<TextArea id={this.props.id} value={this.state.value}/>*/}
++                        {this.state.value.split(",").map((url) => {
++                            if (url !== "") {
++                                return <li style={{listStyleType: "square"}} key={url}>{url}</li>;
++                            }
++                        })}
++                    </Grid.Column>
++                </Grid.Row>
++            </>
++        );
++    }
++
++}
++
++export default AddURL;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/add-advance-setting.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/add-advance-setting.tsx	(date 1575625223448)
++++ identity-apps/apps/admin-portal/src/components/app-settings/add-advance-setting.tsx	(date 1575625223448)
+@@ -0,0 +1,51 @@
++import React, { Component } from "react";
++import { Button, Divider, Form, Grid, Header, Portal, Segment } from "semantic-ui-react";
++import { SettingsSection } from "../../../../user-portal/src/components/shared";
++
++class AddAdvanceSetting extends Component {
++    public state = { open: true };
++
++    public handleClose = () => this.setState({ open: false });
++    public handleOpen = () => this.setState({ open: true });
++
++    public render() {
++        const { open } = this.state;
++
++        return (
++            <div>
++                <SettingsSection
++                    header="OAuth /OpenId"
++                >
++                    <Form className="main-content-inner" style={ { marginLeft: "10%", marginBottom: "5%" } }>
++                        <Grid>
++                            <Grid.Row columns={ 1 }>
++                                <Grid.Column mobile={ 16 } tablet={ 16 } computer={ 9 }>
++                                    <Form.Input
++                                        id="CallbackURL"
++                                        label="CallbackURL"
++                                        placeholder={ "Enter the CallbackURL" }
++                                    />
++                                </Grid.Column>
++                            </Grid.Row>
++                            <Grid.Row columns={ 1 }>
++                                <Grid.Column mobile={ 16 } tablet={ 16 } computer={ 9 }>
++                                    <Form.Input
++                                        id="TokenExpirytime"
++                                        label="Token ExpiryTime "
++                                        placeholder={ "Enter the token expiry time in Sec" }
++                                    />
++                                </Grid.Column>
++                            </Grid.Row>
++                        </Grid>
++                    </Form>
++                </SettingsSection>
++                <SettingsSection
++                    header="SAML"
++                    description="set saml"
++                />
++            </div>
++        );
++    }
++}
++
++export default AddAdvanceSetting;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/dummy-app-builder.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/dummy-app-builder.tsx	(date 1574849608398)
++++ identity-apps/apps/admin-portal/src/components/app-settings/dummy-app-builder.tsx	(date 1574849608398)
+@@ -0,0 +1,6 @@
++import React, {FunctionComponent, MouseEvent} from "react";
++import AttributeMapping from "./claim-mapping";
++
++export const Dummy = () => {
++    return <AttributeMapping/>;
++};
+Index: identity-apps/modules/theme/src/themes/default/collections/form.variables
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/modules/theme/src/themes/default/collections/form.variables	(date 1574338847028)
++++ identity-apps/modules/theme/src/themes/default/collections/form.variables	(date 1574338847028)
+@@ -0,0 +1,0 @@
+Index: identity-apps/apps/admin-portal/src/components/app-settings/general-settings.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/general-settings.tsx	(date 1572512910742)
++++ identity-apps/apps/admin-portal/src/components/app-settings/general-settings.tsx	(date 1572512910742)
+@@ -0,0 +1,64 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import React, {FunctionComponent, MouseEvent} from "react";
++import {Button, Divider, Form, Grid} from "semantic-ui-react";
++
++interface GeneralSettingsProps {
++    name: string;
++    description: string;
++    logo: string;
++}
++const GeneralSettings: FunctionComponent<GeneralSettingsProps> = (props): JSX.Element => {
++    const {
++        name,
++        description,
++        logo
++    } = props;
++
++    return (
++        <div>
++            <Form>
++                <Grid>
++                    <Grid.Row columns={1}>
++                        <Grid.Column mobile={16} tablet={16} computer={9}>
++                            <Form.Input
++                                id="appDescription"
++                                label="Name"
++                                value={name}
++                            />
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row columns={1}>
++                        <Grid.Column mobile={16} tablet={16} computer={9}>
++                            <Form.Input
++                                id="appDescription"
++                                label="Description "
++                                value={description}
++                            />
++                        </Grid.Column>
++                    </Grid.Row>
++                </Grid>
++                <Divider hidden/>
++            </Form>
++        </div>
++    );
++
++};
++
++export default GeneralSettings;
+Index: identity-apps/modules/theme/src/themes/default/collections/form.overrides
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/modules/theme/src/themes/default/collections/form.overrides	(date 1575471575636)
++++ identity-apps/modules/theme/src/themes/default/collections/form.overrides	(date 1575471575636)
+@@ -0,0 +1,89 @@
++/*!
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ *
++ */
++
++.ui.form {
++    .grouped.fields{
++        &.granttypes {
++            .field{
++                .ui.radio.checkbox{
++                    margin-left:10em;
++                }
++            }
++        }
++
++        &.oidc {
++            .field {
++                 margin: 2% 5%;
++            }
++            .subtitle {
++                 font-weight: bold;
++            }
++        }
++
++          &.oidcsub {
++               .field {
++                   margin: 2% 10%;
++                }
++               .oidcsubtitle {
++                    margin: 2% 5%;
++               }
++          }
++    }
++}
++
++.ui.form {
++    &.addGeneral {
++         .field {
++             margin: 0% 5%;
++         }
++    }
++}
++
++.ui.form {
++   .ui.grid {
++     &.details-grid {
++       margin:1em;
++       .details-row {
++          border: 1px solid #dae2e7;
++          .details-column {
++             .tag {
++                color: #8a8c8d;
++             }
++          }
++       }
++       .details-advance-row {
++             position: relative;
++             display: flex;
++             flex-direction: row;
++             flex-wrap: wrap;
++             justify-content: inherit;
++             align-items: stretch;
++             width: 100% !important;
++             padding: 0rem;
++             padding-top: 0.3rem;
++             padding-bottom: 0.3rem;
++             .details-column {
++                  .tag {
++                     color: #8a8c8d;
++                  }
++             }
++       }
++     }
++   }
++}
+Index: identity-apps/apps/admin-portal/src/components/app-settings/application-list.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/application-list.tsx	(date 1575625662943)
++++ identity-apps/apps/admin-portal/src/components/app-settings/application-list.tsx	(date 1575625662943)
+@@ -0,0 +1,183 @@
++import React, {useState} from "react";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Dropdown, Grid, Icon, Image, Input, List, Radio, Search} from "semantic-ui-react";
++import {GenericAppIcon, UserImage} from "../../configs/ui";
++import {SampleApp} from "../../configs/ui";
++import history from "../../helpers/history";
++import {UserImageDummy} from "../ui";
++import {AppDetails} from "./app-new-details";
++// import AppDetails from "./app-details";
++import PortalExampleControlled from "./app-register-portal";
++import {getLocalClaims} from "../../api/application";
++
++const createView = (name, onChecked) => {
++
++    const [viewDetails, setView] = useState({
++        visible: false
++    });
++
++    const addDetailsHandler = () => {
++        const currentvisible = viewDetails.visible;
++        setView(
++            {visible: !currentvisible}
++        );
++    };
++    const appPath = "/" + name;
++    const navigate = (id: string): void => {
++        history.push(`application/${id}`);
++    };
++
++    const capitalizeFirstLetter = (appName) => {
++        return  appName[0].toUpperCase() + appName.slice(1);
++    };
++
++    // @ts-ignore
++    return (
++        <List.Item key={name} className="application-list-item">
++            <Grid>
++                <Grid.Row className={"app-list-row"}>
++                    <Grid.Column width={13} className={"app-content"}>
++                        <Image avatar src={SampleApp}/>
++                        {/* tslint:disable-next-line:max-line-length */}
++                        <List.Content style={{display: "inline-block", paddingLeft: "3%"}} onClick={() => navigate(name)}>{capitalizeFirstLetter(name)}<p style={{fontSize: "10px"}}>type</p></List.Content>
++                    </Grid.Column>
++                    <Grid.Column width={2} className={"app-toggle"}>
++                                <List.Content className="action-bar" floated="right">
++                                    <Radio toggle defaultChecked={true} className="enable-toggle" onClick={onChecked}/>
++                                </List.Content>
++                    </Grid.Column>
++                    <Grid.Column width={1} className={"app-actions"}>
++                        {viewDetails.visible ?
++                            <List.Content className="action-bar" floated="right">
++                                <Icon
++                                    link
++                                    className=""
++                                    size="large"
++                                    onClick={addDetailsHandler}
++                                    color="grey"
++                                    name="arrow alternate circle up outline"
++                                />
++                            </List.Content> : <List.Content className="action-bar" floated="right">
++                                <Icon
++                                    link
++                                    className=""
++                                    size="large"
++                                    onClick={addDetailsHandler}
++                                    color="grey"
++                                    name="arrow alternate circle down outline"
++                                />
++                            </List.Content>
++                        }
++                    </Grid.Column>
++                </Grid.Row>
++                {/* tslint:disable-next-line:max-line-length */}
++                {viewDetails.visible ? <Grid.Row  className={"app-details"}>
++                    <Grid.Column width={15}><AppDetails appName={name}/> </Grid.Column>
++                    <Grid.Column width={1} className={"app-actions"}>
++                        <List.Content className="delete-icon" floated="right">
++                            <Icon
++                                link
++                                className=""
++                                size="large"
++                                onClick= {" "}
++                                color="grey"
++                                name="trash alternate outline"
++                            />
++                        </List.Content>
++                    </Grid.Column>
++                </Grid.Row> : null}
++            {/*<Route path={"/application/" + name}*/}
++            {/*       component={() => <AppBuilder name={name} description={"sample"}/>}/>*/}
++            </Grid>
++        </List.Item>
++    );
++};
++
++const ListExampleFloated = (props) => {
++
++    const [viewActive, setActive] = useState({
++        active: 0
++    });
++
++    const addActive = () => {
++      const currentActive = viewActive.active;
++      setActive(
++          {active: currentActive + 1}
++      );
++    };
++    const applications = ["playground", "travelocity", "pickUp", "delivery"];
++    const list = applications.map((apps) => {
++        return createView(apps, addActive);
++    });
++    const navigateNew = () => {
++        history.push("/application/new/template");
++    };
++    const sort = [
++        {
++            key: "Alphabet",
++            text: "Alphabet",
++            value: "Alphabet",
++        },
++        {
++            key: "Usage",
++            text: "Usage",
++            value: "Usage",
++        },
++    ];
++
++    const downloadUserProfile = (): void => {
++        // tslint:disable-next-line:no-console
++        console.log(" This is happening");
++        getLocalClaims()
++            .then((response) => {
++                if (response.status === 200) {
++                    // tslint:disable-next-line:no-console
++                    console.log(response.body);
++                }
++            });
++    };
++    return (
++        // <BrowserRouter>
++        <div>
++            <Grid>
++                <Grid.Row>
++                    <Grid.Column width={12}>
++                        <Input style={{width: "100%"}} icon="search" placeholder="Search Application ..."/>
++                    </Grid.Column>
++                    <Grid.Column width={4} className="last-column" >
++                        <Button  icon="add" onClick={navigateNew}>
++                            <div style={{fontStyle: "large"}}>+ APPLICATION </div></Button>
++                        {/*<PortalExampleControlled/>*/}
++                    </Grid.Column>
++                </Grid.Row>
++                <Grid.Row  divided style={{color: "#686f77"}}>
++                    <Grid.Column width={3} className={"divided"}>
++                        <span>Sort By <Divider vertical hidden />
++                        <Dropdown
++                            inline
++                            options={sort}
++                            defaultValue={sort[0].value}
++                        />
++                        </span>
++                    </Grid.Column >
++                    <Grid.Column width={4}>
++                        <span> Total Applications  4 </span>
++                    </Grid.Column>
++                </Grid.Row>
++                <Grid.Row>
++                    <Grid.Column>
++                        <Divider hidden/>
++                        <List divided verticalAlign="middle" className="application-list">
++                            {list}
++                            {/*{console.log(props)}*/}
++                            {downloadUserProfile()}
++                        </List>
++                        {/*{viewDetails.visible ? <AppBuilder/> : null}*/}
++                    </Grid.Column>
++                </Grid.Row>
++            </Grid>
++        </div>
++    );
++
++};
++export default ListExampleFloated;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/samlform.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/samlform.tsx	(date 1574833143783)
++++ identity-apps/apps/admin-portal/src/components/app-settings/samlform.tsx	(date 1574833143783)
+@@ -0,0 +1,291 @@
++import React, {Component} from "react";
++import {Button, Checkbox, Divider, Dropdown, Form, Grid, Header, Message, Portal, Segment} from "semantic-ui-react";
++import {SettingsSection} from "../../../../user-portal/src/components/shared";
++import AdvanceSettings from "./advance-setting";
++import Appsteps from "./app-steps";
++import AddURL from "./addURLcomponent";
++
++interface SAMLformProps {
++    cancelView?: any;
++}
++
++class SAMLform extends Component<SAMLformProps>  {
++    public state = {open: true};
++
++    public defaultConsumerUrls = [
++        { key: "j", text: "default", value: "https://google.com"},
++    ];
++    public encryptionAlgorithms = [
++        { key: "a", text: "RSA-OAEP", value: "RSA-OAEP" },
++    ];
++    public alias = [
++        { key: "a", text: "wso2", value: "WSO2" },
++    ];
++    public responseSigningAlgorithm = [
++        { key: "a", text: "RSA-OAEP", value: "RSA-OAEP" },
++    ];
++    public responseDigestAlgorithm = [
++        { key: "a", text: "RSA-OAEP", value: "RSA-OAEP" },
++    ];
++    public singleLogoutMethod = [
++        { key: "a", text: "Back-channel", value: "back-channel" },
++        { key: "b", text: "Front-channel Http Redirect", value: "frontchannel_http_redirect" },
++        { key: "c", text: "Front-channel Http Post", value: "frontchannel_http_post" },
++    ];
++
++    public handleClose = () => this.setState({open: false});
++    public handleOpen = () => this.setState({open: true});
++
++    public render() {
++
++        return (
++            <div>
++                <Form className="main-content-inner" style={{marginLeft: "10%", marginBottom: "5%"}}>
++                    <Grid>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Input
++                                    id="issuer"
++                                    label="issuer"
++                                    placeholder={"Enter the issuer"}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={9}>
++                                <Form.Group grouped className="oidc">
++                                    <Form.TextArea label="Assertion ConsumerUrls" placeholder="add some consumerUrls" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Default Assertion Consumer URL</label>
++                                <Dropdown
++                                    placeholder=" defaultAssertionConsumerUrl"
++                                    fluid
++                                    selection
++                                    options={this.defaultConsumerUrls}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Default Assertion Consumer URL</label>
++                                <label>https://google.com</label>
++                                {/*<Form.Input*/}
++                                {/*    id="attributeConsumingServiceIndex"*/}
++                                {/*    label="attributeConsumingServiceIndex"*/}
++                                {/*    placeholder={"Change attributeConsumingServiceIndex"}*/}
++                                {/*/>*/}
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Request Signature Validation" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Assertion Encryption" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Assertion Encryption" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Encryption Algorithm</label>
++                                <Dropdown
++                                    placeholder=" Encryption Algorithm"
++                                    fluid
++                                    selection
++                                    options={this.encryptionAlgorithms}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Input
++                                    id="nameIdFormat"
++                                    label="NameID format"
++                                    placeholder={"Enter the issuer"}
++                                    value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable IdP Initiated SSO" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Response Signing" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Request Validation Certificate Alias</label>
++                                <Dropdown
++                                    fluid
++                                    selection
++                                    defaultValue={0}
++                                    options={this.alias}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Response Signing Algorithm</label>
++                                <Dropdown
++                                    fluid
++                                    selection
++                                    defaultValue={0}
++                                    options={this.responseSigningAlgorithm}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Response Digest Algorithm</label>
++                                <Dropdown
++                                    fluid
++                                    selection
++                                    defaultValue={this.responseDigestAlgorithm[0].value}
++                                    options={this.responseDigestAlgorithm}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Single Logout" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={9}>
++                                <Form.Group grouped className="oidc">
++                                    {/* tslint:disable-next-line:max-line-length */}
++                                    <Form.TextArea label="Single Logout Response Url" placeholder="add some Urls" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={9}>
++                                <Form.Group grouped className="oidc">
++                                    {/* tslint:disable-next-line:max-line-length */}
++                                    <Form.TextArea label="Single Logout Request Url" placeholder="add some Urls" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <label>Single Logout Method</label>
++                                <Dropdown
++                                    fluid
++                                    selection
++                                    defaultValue={this.singleLogoutMethod[0].value}
++                                    options={this.singleLogoutMethod}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Idp Initiated SingleLogOut" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Include Attributes in the Response Always" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={9}>
++                                <Form.Group grouped className="oidc">
++                                    {/* tslint:disable-next-line:max-line-length */}
++                                    <Form.TextArea label="Audiences" placeholder="add some Urls" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <AddURL label="Recipients" id="Recipients" placeholder="add some Urls"/>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Assertion Query Profile" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable SAML2 ArtifactBinding" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                {/* tslint:disable-next-line:max-line-length */}
++                                <Form.Field label="Enable Signature Validation in ArtifactBinding" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Input
++                                    id="idPEntityidAlias"
++                                    label="IdP Entity ID Alias"
++                                    placeholder={"Enter alias"}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                    </Grid>
++                    <Divider hidden />
++                    <Button primary type="submit" size="small">
++                        submit
++                    </Button>
++                    <Button
++                        className="link-button"
++                        onClick={this.props.cancelView}
++                        size="small"
++                    >
++                        cancel
++                    </Button>
++                </Form>
++            </div>
++        );
++    }
++
++    // private addUrl  = (label, placeholder, id, text) => {
++    //     return (
++    //         <div>
++    //             <Grid.Row columns={1}>
++    //                 <Grid.Column mobile={16} tablet={16} computer={14}>
++    //                     <label>{label}</label>
++    //                 </Grid.Column>
++    //             </Grid.Row>
++    //             <Grid.Row columns={2}>
++    //                 <Grid.Column mobile={16} tablet={16} computer={10}>
++    //                     <Form.Input
++    //                         fluid
++    //                         id={id}
++    //                         placeholder={placeholder}
++    //                     />
++    //                 </Grid.Column>
++    //                 <Grid.Column mobile={16} tablet={16} computer={4}>
++    //                     {/* tslint:disable-next-line:no-unused-expression */}
++    //                     <Button info onClick={() => {<li>hi</li>}}/>
++    //                 </Grid.Column>
++    //             </Grid.Row>
++    //         </div>
++    //     );
++    // }
++}
++
++export default SAMLform;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/oidcform.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/oidcform.tsx	(date 1574990694699)
++++ identity-apps/apps/admin-portal/src/components/app-settings/oidcform.tsx	(date 1574990694699)
+@@ -0,0 +1,196 @@
++import React, {Component} from "react";
++import {Button, Checkbox, Divider, Form, Grid, Header, Message, Portal, Segment} from "semantic-ui-react";
++import {SettingsSection} from "../../../../user-portal/src/components/shared";
++import AdvanceSettings from "./advance-setting";
++import Appsteps from "./app-steps";
++
++interface ODICformProps {
++    cancelView?: any;
++}
++
++class ODICform extends Component<ODICformProps>  {
++    public state = {open: true};
++
++    public options = [
++        { key: "j", text: "JWT", value: "jwt" },
++        { key: "o", text: "Opaque", value: "opaque" },
++    ];
++    public algorithms = [
++        { key: "a", text: "RSA-OAEP", value: "RSA-OAEP" },
++    ];
++    public method = [
++        { key: "a", text: "A128CBC+HS256", value: "A128CBC+HS256" },
++    ];
++
++    public handleClose = () => this.setState({open: false});
++    public handleOpen = () => this.setState({open: true});
++
++    public render() {
++
++        return (
++            <div>
++                <Form className="main-content-inner" style={{marginLeft: "10%", marginBottom: "5%"}}>
++                    <Grid>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Input
++                                    id="CallbackURL"
++                                    label="CallbackURL"
++                                    placeholder={"Enter the CallbackURL"}
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={9}>
++                                <Form.Group grouped className="oidc">
++                                    <label >Allowed Grant Types</label>
++                                    <Form.Radio
++                                        label="OAuth Code"
++                                        value="code"
++                                    />
++                                    <Form.Radio
++                                        label="Password"
++                                        value="password"
++                                    />
++                                    <Form.Radio
++                                        label="Client credential"
++                                        value="clientcredential"
++                                    />
++                                    <Form.Radio
++                                        label="Implicit"
++                                        value="implicit"
++                                    />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Field>
++                                    <Checkbox label="Support Public Clients" />
++                                    {/*<Message*/}
++                                    {/*    info*/}
++                                    {/*    content=" Doesn't check for client secret"*/}
++                                    {/*/>*/}
++                                </Form.Field>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">PKCE</label>
++                                    <Form.Field label="PKCE mandatory" control="input" type="checkbox" />
++                                    <Form.Field label="Support PKCE 'Plain' Transform Algorithm" control="input" type="checkbox" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={2}>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">Access Token</label>
++                                    <Form.Select options={this.options} placeholder="Type"   label="Type"/>
++                                </Form.Group>
++                            </Grid.Column>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Divider hidden/>
++                                <Form.Input
++                                    id="userAccessTokenExpiryInSeconds"
++                                    label="User Access Token Expiry Time"
++                                    value="3600"
++                                />
++                                <Form.Input
++                                    id="applicationAccessTokenExpiryInSeconds"
++                                    label="Application Access Token Expiry Time"
++                                    value="3600"
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">Refereh Token</label>
++                                    <Form.Field label="Renew Refresh Token" control="input" type="checkbox" />
++                                </Form.Group>
++                            </Grid.Column>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Divider hidden/>
++                                <Form.Input
++                                    id="expiryInSeconds"
++                                    label="Refresh Token Expiry Time"
++                                    value="86400"
++                                />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">ID Token</label>
++                                    <Form.TextArea label="Audience" placeholder="add some audience" />
++                                    <Form.Group grouped className="oidcsub">
++                                        <label className="oidcsubtitle">Encryption</label>
++                                        <Form.Field label="Enable" control="input" type="checkbox" />
++                                        <Form.Select options={this.algorithms}  label="Algorithm"/>
++                                        <Form.Select options={this.method}  label="Method"/>
++                                    </Form.Group>
++                                </Form.Group>
++                            </Grid.Column>
++                            <Grid.Column mobile={16} tablet={16} computer={7}>
++                                <Divider hidden/>
++                                <Form.Input
++                                    id="idExpiryInSeconds"
++                                    label="Id Token Expiry Time"
++                                    value="3600"
++                                />
++                                <Divider hidden/>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">Logout</label>
++                                <Form.Input
++                                    id="backChannelLogoutUrl"
++                                    label="Backchannel Logout Url"
++                                    placeholder="Enter Url .."
++                                />
++                                <Form.Input
++                                    id="frontChannelLogoutUrl"
++                                    label="Frontchannel Logout Url"
++                                    placeholder="Enter Url .."
++                                />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Field label="Enable Request Object Signature Validation" control="input" type="checkbox" />
++                            </Grid.Column>
++                        </Grid.Row>
++                        <Grid.Row columns={1}>
++                            <Grid.Column mobile={16} tablet={16} computer={14}>
++                                <Form.Group grouped className="oidc">
++                                    <label className="subtitle">Scope Validators</label>
++                                    {/* tslint:disable-next-line:max-line-length */}
++                                    <Form.Field label="Role based scope validator" control="input" type="checkbox" />
++                                    <Form.Field label="XACML Scope Validator" control="input" type="checkbox" />
++                                </Form.Group>
++                            </Grid.Column>
++                        </Grid.Row>
++                    </Grid>
++                    <Divider hidden />
++                    <Button primary type="submit" size="small">
++                        submit
++                    </Button>
++                    <Button
++                        className="link-button"
++                        onClick={this.props.cancelView}
++                        size="small"
++                    >
++                        cancel
++                    </Button>
++                </Form>
++            </div>
++        );
++    }
++}
++
++export default ODICform;
+Index: identity-apps/apps/admin-portal/src/pages/app-listing.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/app-listing.tsx	(date 1575624921538)
++++ identity-apps/apps/admin-portal/src/pages/app-listing.tsx	(date 1575624921538)
+@@ -0,0 +1,71 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import {
++    AuthenticateSessionUtil,
++    AuthenticateUserKeys
++} from "@wso2is/authentication";
++import * as React from "react";
++import {useTranslation} from "react-i18next";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Divider, Grid, Image, List} from "semantic-ui-react";
++import { AppBuilder } from "../components";
++import ListExampleFloated from "../components/app-settings/application-list";
++import history from "../helpers/history";
++import {InnerPageLayout} from "../layouts";
++import {UserImageDummy} from "../../../user-portal/src/components/shared";
++
++/**
++ * Overview page.
++ *
++ * @return {JSX.Element}
++ */
++const getAppName = (): string => {
++    const path = history.location.pathname.split("/");
++    const appName = path[path.length - 1];
++    return appName;
++};
++
++export const ApplistingPage = (): JSX.Element => {
++
++    return (
++        <InnerPageLayout pageTitle={" "}>
++            {/*<div>*/}
++            {/*    <Image src={ UserImageDummy } size="small" circular />*/}
++            {/*    <h1>{getAppName()}</h1>*/}
++            {/*    <AppBuilder/>*/}
++            {/*</div>*/}
++            {/*<Grid>*/}
++            {/*    <Grid.Row>*/}
++            {/*        <Grid.Column width={5}>*/}
++            {/*            <Image src={ UserImageDummy } size="small" circular />*/}
++            {/*        </Grid.Column>*/}
++            {/*        <Grid.Column width={4} >*/}
++            {/*            <h1 style={{fontVariant: "small-caps"}}>{getAppName()}</h1>*/}
++            {/*        </Grid.Column>*/}
++            {/*    </Grid.Row>*/}
++            {/*    <Grid.Row>*/}
++            {/*        <Grid.Column md="auto">*/}
++            {/*            <AppBuilder/>*/}
++            {/*        </Grid.Column>*/}
++            {/*    </Grid.Row>*/}
++            {/*</Grid>*/}
++            <AppBuilder />
++        </InnerPageLayout>
++    );
++};
+Index: identity-apps/apps/admin-portal/src/components/app-settings/index.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/index.ts	(date 1575373597389)
++++ identity-apps/apps/admin-portal/src/components/app-settings/index.ts	(date 1575373597389)
+@@ -0,0 +1,27 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++export * from "./application-builder";
++export * from "./application-list";
++export * from "./app-register-portal";
++export * from "./add-advance-setting";
++export * from "./app-steps";
++export * from "./app-template";
++export * from "./app-steps-round";
++export * from "./oidcform";
++export * from "./claim-mapping";
+Index: identity-apps/apps/admin-portal/src/pages/application.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/application.tsx	(date 1575624921556)
++++ identity-apps/apps/admin-portal/src/pages/application.tsx	(date 1575624921556)
+@@ -0,0 +1,53 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++
++import {
++    AuthenticateSessionUtil,
++    AuthenticateUserKeys
++} from "@wso2is/authentication";
++import * as React from "react";
++import { useTranslation } from "react-i18next";
++import { Divider } from "semantic-ui-react";
++import ListExampleFloated from "../components/app-settings/application-list";
++import { InnerPageLayout } from "../layouts";
++
++/**
++ * Overview page.
++ *
++ * @return {JSX.Element}
++ */
++export const ApplicationPage = (): JSX.Element => {
++    const {t} = useTranslation();
++    return (
++        <InnerPageLayout
++            pageTitle={t(
++                "views:applicationPage.title",
++                {firstName: AuthenticateSessionUtil.getSessionParameter(AuthenticateUserKeys.DISPLAY_NAME)}
++            )}
++            pageDescription={t("views:applicationPage.subTitle")}
++            pageTitleTextAlign="left"
++        >
++            <Divider hidden/>
++            {/*<GeneralSettings name={"First app"} description={"normal"} logo={"ha ha"}/>*/}
++            {/*<AppBuilder name={"First app"} description={"normal"}/>*/}
++            {/*<AppBuilder name={"sample"} description={"mockUp"}/>*/}
++            <ListExampleFloated/>
++            {/*<ApplistingPage/>*/}
++        </InnerPageLayout>
++    );
++};
+Index: identity-apps/apps/admin-portal/src/pages/new-selection-application.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/new-selection-application.tsx	(date 1575615861814)
++++ identity-apps/apps/admin-portal/src/pages/new-selection-application.tsx	(date 1575615861814)
+@@ -0,0 +1,85 @@
++import * as React from "react";
++import {Grid, Icon, Input} from "semantic-ui-react";
++import Template from "../components/app-settings/app-template";
++import {DefaultPageLayout, InnerPageLayout} from "../layouts";
++import history from "../helpers/history";
++
++export const SelectAppPage = () => {
++    const templateList = {
++        details: ["Front end applications which uses API. ", "Regular web applications thats use redirections inside browsers"
++            , "Regular web applications thats use redirections inside browsers"],
++        name: ["Single Page", "Web App", "SAML - Web App"],
++        type: ["eg ReactJs, Nodejs apps", "eg JAVA, .Net apps", "eg JAVA, .Net apps"]
++    };
++
++    // const buildTemplate = () => {
++    //     const num = templateList.name.length;
++    //     const temp = templateList.name.map((element) => {
++    //         const index = templateList.name.indexOf(element);
++    //         return (
++    //             <Grid.Column width={4}>
++    //                 <Template name={templateList.name[index]}
++    //                           details={templateList.details[index]}
++    //                           type={templateList.type[index]}
++    //                 />
++    //             </Grid.Column>);
++    //     }).reduce((arr, el) => {
++    //         return arr.concat(el);
++    //     }, []);
++    //     // for (let i = 0; i < num; i++) {
++    //     //     return (
++    //     //     <Grid.Column width={4}>
++    //     //      <Template name={templateList.name[i]}
++    //     //                      details={templateList.details[i]}
++    //     //                      type={templateList.type[i]}
++    //     //      />
++    //     //     </Grid.Column>);
++    //     // }
++    // }
++    const temp = templateList.name.map((element) => {
++        const index = templateList.name.indexOf(element);
++        return (
++            <Grid.Column width={4} key={element}>
++                <Template name={element}
++                          details={templateList.details[index]}
++                          type={templateList.type[index]}
++                />
++            </Grid.Column>);
++    }).reduce((arr, el) => {
++        return arr.concat(el);
++    }, []);
++
++    const navigate = (): void => {
++        history.push("/application");
++    };
++    return (
++            <DefaultPageLayout
++                pageTitle={"Select Application Type"}
++                pageDescription={" Please choose one the types to build your application "}
++                pageTitleTextAlign={"center"}>
++                <Grid>
++                    <Grid.Row>
++                        <Grid.Column>
++                            <Icon
++                                link
++                                size="large"
++                                onClick={navigate}
++                                color="grey"
++                                name="arrow left"
++                            />
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row>
++                        <Grid.Column>
++                            <Input style={ {width: "100%" }} icon="search" placeholder="Search Template..."/>
++                        </Grid.Column>
++                    </Grid.Row>
++                    <Grid.Row>
++                        { temp }
++                    </Grid.Row>
++                </Grid>
++            </DefaultPageLayout>
++    );
++};
++
++export default SelectAppPage;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/claim-mapping.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/claim-mapping.tsx	(date 1575559513952)
++++ identity-apps/apps/admin-portal/src/components/app-settings/claim-mapping.tsx	(date 1575559513952)
+@@ -0,0 +1,194 @@
++import React, {useState} from "react";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Dropdown, Grid, Icon, Image, Input, List, Radio, Search} from "semantic-ui-react";
++import {SampleApp} from "../../configs";
++import history from "../../helpers/history";
++import {getLocalClaims} from "../../api/application";
++
++
++const createView = (attributeName, Scope , onClick, select) => {
++
++    const capitalizeFirstLetter = (appName) => {
++        return  appName[0].toUpperCase() + appName.slice(1);
++    };
++
++    const [viewClass, setClass] = useState({
++        class: "claim-list-item"
++    });
++
++    const findSelected  = () => {
++        if (select) {
++            return "claim-list-item dark";
++        } else {
++            return "claim-list-item";
++        }
++    };
++
++    return (
++        <List.Item key={attributeName} className={findSelected()}>
++            <Grid>
++                <Grid.Row className={"app-list-row"}>
++                    <Grid.Column width={14} className={"app-content"}>
++                        {/*<Image avatar src={SampleApp}/>*/}
++                        {/* tslint:disable-next-line:max-line-length */}
++                        <List.Content className="claim-list-content">
++                            <div className={"main-content"}>{capitalizeFirstLetter(attributeName)}</div>
++                            <div className="sub-content">{Scope}</div>
++                        </List.Content>
++                    </Grid.Column>
++                    <Grid.Column width={2} className={"app-actions"}>
++                            <List.Content className="action-bar">
++                                { select ?
++                                    <Icon
++                                    link
++                                    className="claim-icon"
++                                    size="small"
++                                    color="grey"
++                                    name="minus"
++                                    onClick={() => onClick(attributeName)}
++                                /> : <Icon
++                                        link
++                                        className="claim-icon"
++                                        size="small"
++                                        color="grey"
++                                        name="plus"
++                                        onClick={() => onClick(attributeName)}
++                                    />
++                                }
++                            </List.Content>
++                    </Grid.Column>
++                </Grid.Row>
++            </Grid>
++        </List.Item>
++    );
++}
++
++export const AttributeMapping = (props) => {
++
++    const [viewActive, setActive] = useState({
++        active: 0
++    });
++
++    const [viewAttribute, addAttribute] = useState({
++        selectedAttributes: []
++    });
++    const [viewAll, addAll] = useState({
++        attributes: ["username", "email", "mobile", "address"]
++    });
++
++    const addActive = () => {
++        const currentActive = viewActive.active;
++        setActive(
++            {active: currentActive + 1}
++        );
++    };
++    const attributes = ["username", "email", "mobile", "address"];
++
++    const selectAttribute = (attributeName) => {
++        const oldAttributes = [...viewAttribute.selectedAttributes];
++        const allAttributes = [...viewAll.attributes];
++        const index = allAttributes.indexOf(attributeName);
++        if (index > -1) {
++            allAttributes.splice(index, 1);
++        }
++        oldAttributes.push(attributeName);
++        addAttribute(
++            {selectedAttributes: oldAttributes}
++        );
++        addAll(
++            {attributes: allAttributes}
++        );
++    };
++
++    const removeAttribute = (attributeName) => {
++        const oldAttributes = [...viewAttribute.selectedAttributes];
++        const allAttributes = [...viewAll.attributes];
++        const index = oldAttributes.indexOf(attributeName);
++        if (index > -1) {
++            oldAttributes.splice(index, 1);
++        }
++        allAttributes.push(attributeName)
++        addAttribute(
++            {selectedAttributes: oldAttributes}
++        );
++        addAll(
++            {attributes: allAttributes}
++        );
++    };
++
++    const list = viewAll.attributes.map((apps) => {
++
++        return createView(apps, "openid", selectAttribute, false);
++    });
++
++    const selectedList = viewAttribute.selectedAttributes.map((apps) => {
++
++        return createView(apps, "openid", removeAttribute, true);
++    });
++    const navigateNew = () => {
++        history.push("/application/new/template");
++    };
++    const sort = [
++        {
++            key: "All",
++            text: "All",
++            value: "All",
++        },
++        {
++            key: "OpenID",
++            text: "OpenID",
++            value: "OpenID",
++        },
++    ];
++    const filter = "Scope: ";
++    const downloadUserProfile = (): void => {
++        getLocalClaims()
++            .then((response) => {
++                if (response.status === 200) {
++                    // tslint:disable-next-line:no-console
++                    console.log(response.body);
++                }
++            });
++    };
++
++    return (
++        <div>
++            <Grid>
++                <Grid.Row>
++                    <Grid.Column width={2}/>
++                    <Grid.Column width={12}>
++                        <Input style={{width: "100%"}} icon="search" placeholder="Search Attributes"/>
++                    </Grid.Column>
++                    <Grid.Column width={2}/>
++                </Grid.Row>
++                <Grid.Row  divided style={{color: "#686f77"}}>
++                    <Grid.Column width={3} className={"divided"}>
++                        <span>{filter}
++                        <Dropdown
++                            inline
++                            options={sort}
++                            defaultValue={sort[0].value}
++                        />
++                        </span>
++                    </Grid.Column >
++                </Grid.Row>
++                <Grid.Row>
++                    <Grid.Column width={8}>
++                          Available
++                        <List verticalAlign="middle" className="claim-list">
++                            {list}
++                        </List>
++                    </Grid.Column>
++                    <Grid.Column width={8}>
++                          Selected
++                        <List verticalAlign="middle" className="claim-list">
++                            {selectedList}
++                        </List>
++                    </Grid.Column>
++                </Grid.Row>
++            </Grid>
++        </div>
++    );
++
++};
++export default AttributeMapping;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-template.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-template.tsx	(date 1573025079041)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-template.tsx	(date 1573025079041)
+@@ -0,0 +1,33 @@
++import React from "react";
++import {Card, Icon, Image} from "semantic-ui-react";
++import {HomeTileIconImages, SampleApp} from "../../configs/ui";
++import history from "../../helpers/history";
++
++const appTemplate = (props) => {
++
++    const navigateNew = (name) => {
++        history.push("/application/new/" + name);
++    };
++    return (
++        <Card onClick={() => navigateNew(props.name)}>
++            <Image src={SampleApp} wrapped ui={false}/>
++            <Card.Content>
++                <Card.Header>{props.name}</Card.Header>
++                <Card.Meta>
++                    <span>{props.details}</span>
++                </Card.Meta>
++                <Card.Description>
++                    {props.type}
++                </Card.Description>
++            </Card.Content>
++            {/*<Card.Content extra>*/}
++            {/*    /!*<a>*!/*/}
++            {/*    /!*    <Icon name="user" />*!/*/}
++            {/*    /!*    22 Friends*!/*/}
++            {/*    /!*</a>*!/*/}
++            {/*</Card.Content>*/}
++        </Card>
++    );
++};
++
++export default appTemplate;
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-details.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-details.tsx	(date 1575471031406)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-details.tsx	(date 1575471031406)
+@@ -0,0 +1,123 @@
++/**
++ * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
++ *
++ * WSO2 Inc. licenses this file to you under the Apache License,
++ * Version 2.0 (the "License"); you may not use this file except
++ * in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing,
++ * software distributed under the License is distributed on an
++ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++ * KIND, either express or implied. See the License for the
++ * specific language governing permissions and limitations
++ * under the License.
++ */
++import React, {FunctionComponent, MouseEvent, useState} from "react";
++import {BrowserRouter, Link, Route} from "react-router-dom";
++import {Button, Divider, Form, Input, Menu, Segment, Tab} from "semantic-ui-react";
++import history from "../../helpers/history";
++// import {FunctionComponent} from "react";
++import AdvanceSettings from "./advance-setting";
++import GeneralSettings from "./general-settings";
++import GeneralDetails from "./app-details-general";
++import AdvanceDetails from "./app-details-advance";
++
++// // tslint:disable-next-line:no-empty-interface
++// interface ApplicationBuilderProps {
++//     // name: string;
++//     // description: string;
++// }
++
++// const navigate = (): void => {
++//     history.goBack();
++// };
++//
++// const getAppName = (): string => {
++//     const path = history.location.pathname.split("/");
++//     const appName = path[path.length - 1];
++//     return appName;
++// };
++//
++// const panes = [
++//     {
++//         menuItem: "General Settings",
++//         render: () => <Tab.Pane attached={false}>{<GeneralSettings name={"kumar"} description={"trial"}
++//                                                                    logo={"dfa"}/>}</Tab.Pane>,
++//     },
++//     {
++//         menuItem: "Advance Settings",
++// tslint:disable-next-line:max-line-length
++//         render: () => <Tab.Pane attached={false}>{<AdvanceSettings name={"kumar"} description={"trial"}/>}</Tab.Pane>,
++//     },
++//     {
++//         menuItem: "Attributes",
++//         render: () => <Tab.Pane attached={false}>claim mapping</Tab.Pane>,
++//     },
++//     {
++//         menuItem: "Connections",
++//         render: () => <Tab.Pane attached={false}>connections</Tab.Pane>,
++//     },
++// ];
++
++const panes = (props): JSX.Element => {
++
++    const [viewDetails, setView] = useState({
++        activeItem: "Profile"
++    });
++
++    const handleItemClick = (e, {name}) => setView({activeItem: name});
++
++    return (
++        <div>
++            <Menu attached="top" tabular>
++                <Menu.Item
++                    name="Profile"
++                    active={viewDetails.activeItem === "Profile"}
++                    onClick={handleItemClick}
++                />
++                <Menu.Item
++                    name="Settings"
++                    active={viewDetails.activeItem === "Settings"}
++                    onClick={handleItemClick}
++                />
++                <Menu.Item
++                    name="Attribute Mapping"
++                    active={viewDetails.activeItem === "Attribute Mapping"}
++                    onClick={handleItemClick}
++                />
++                <Menu.Item
++                    name="Connections"
++                    active={viewDetails.activeItem === "Connections"}
++                    onClick={handleItemClick}
++                />
++                {/*<Menu.Menu position="right">*/}
++                {/*    <Menu.Item>*/}
++                {/*        <Input*/}
++                {/*            transparent*/}
++                {/*            icon={{name: "search", link: true}}*/}
++                {/*            placeholder="Search users..."*/}
++                {/*        />*/}
++                {/*    </Menu.Item>*/}
++                {/*</Menu.Menu>*/}
++            </Menu>
++            <Segment attached="bottom" style={{minHeight: "200px"}}>
++                {/* tslint:disable-next-line:max-line-length */}
++                {viewDetails.activeItem === "Profile" && <GeneralDetails name={props.appName} description={"show the demo"}/>}
++                {/* tslint:disable-next-line:max-line-length */}
++                {viewDetails.activeItem === "Settings" &&
++                // tslint:disable-next-line:max-line-length
++                <AdvanceDetails callbackURL="https://wso2.com" clientID="admin-portal" grantType="Authorization code" responseType="code" secret={"dakfakjd"}/>}
++                {viewDetails.activeItem === "Attribute Mapping" ? <p> Claim mapping </p> : null}
++                {viewDetails.activeItem === "Connections" ? <p> Connections </p> : null}
++            </Segment>
++        </div>
++    );
++};
++
++// const AppDetails = (): JSX.Element => {
++//     return ({panes});
++// };
++export default panes;
+Index: identity-apps/apps/admin-portal/src/pages/home.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/pages/home.tsx	(date 1575612737000)
++++ identity-apps/apps/admin-portal/src/pages/home.tsx	(date 1575624758325)
+@@ -32,6 +32,7 @@
+ export const HomePage = (): JSX.Element => {
+     const { t } = useTranslation();
+     return (
++
+         <InnerPageLayout
+             pageTitle={ t(
+                 "views:overviewPage.title",
+@@ -39,7 +40,6 @@
+                 ) }
+             pageDescription={ t("views:overviewPage.subTitle") }
+             pageTitleTextAlign="left"
+-        >
+-        </InnerPageLayout>
++        />
+     );
+ };
+Index: identity-apps/apps/admin-portal/src/components/app-settings/app-steps.tsx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- identity-apps/apps/admin-portal/src/components/app-settings/app-steps.tsx	(date 1573820598620)
++++ identity-apps/apps/admin-portal/src/components/app-settings/app-steps.tsx	(date 1573820598620)
+@@ -0,0 +1,82 @@
++import React from "react";
++
++// tslint:disable-next-line:no-submodule-imports
++import {Simulate} from "react-dom/test-utils";
++import {Button, Form, Grid, Icon, Step} from "semantic-ui-react";
++import transitionEnd = Simulate.transitionEnd;
++import AdvanceSettings from "./advance-setting";
++import {SidePanelWrapper} from "../side-panel";
++import {InnerPageLayout} from "../../layouts";
++import history from "../../helpers/history";
++
++const createSteps = (list, active) => {
++    const TotalList = [...list];
++    return TotalList.map((item) => {
++        const index = list.indexOf(active);
++        const bool = list.indexOf(item) < index;
++        // tslint:disable-next-line:no-console
++        return (<Step  active={item === active} key={item} completed={bool}>
++            {/*<Icon/>*/}
++            <Step.Content>
++                <Step.Title>{item}</Step.Title>
++                {/*<Step.Description>Choose your shipping options</Step.Description>*/}
++            </Step.Content>
++        </Step>);
++    });
++};
++
++const appRegister = (props) => {
++    const totalSteps = props.list;
++    const navigate = (): void => {
++        history.push("/application");
++    };
++    return (
++        <Grid>
++            <Grid.Row>
++                <Grid.Column width={15}>
++                    <Icon
++                        link
++                        size="large"
++                        onClick={props.back}
++                        color="grey"
++                        name="arrow left"
++                    />
++                </Grid.Column>
++                {/*<Grid.Column width={1} className="last-column">*/}
++                {/*    {props.enableForward ?*/}
++                {/*        <Icon*/}
++                {/*            link*/}
++                {/*            size="large"*/}
++                {/*            onClick={props.next}*/}
++                {/*            color="grey"*/}
++                {/*            name="arrow right"*/}
++                {/*        /> : null}*/}
++                {/*</Grid.Column>*/}
++            </Grid.Row>
++            <Grid.Row>
++                <Grid.Column width={3}/>
++                <Grid.Column width={10} style={{margin: "auto"}}>
++                    {props.children}
++                </Grid.Column>
++            </Grid.Row>
++            <Grid.Row>
++                <Grid.Column>
++                    <div className="wizard-steps">
++                        <li> settings</li>
++                        <li className="active">2</li>
++                        <li>3</li>
++                    </div>
++                </Grid.Column>
++            </Grid.Row>
++            <Grid.Row style={{bottom: "0", width: "100%", position: "fixed", marginLeft: "20%"}}>
++                <Grid.Column width={16}>
++                    <Step.Group ordered>
++                        {createSteps(totalSteps, props.step)}
++                    </Step.Group>
++                </Grid.Column>
++            </Grid.Row>
++        </Grid>
++    );
++};
++
++export default appRegister;

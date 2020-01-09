@@ -23,3 +23,4 @@ export * from "./protected-route";
 export * from "./ui";
 export * from "./icon";
 export * from "./side-panel";
+export * from "./app-settings/index";

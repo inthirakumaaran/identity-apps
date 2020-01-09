@@ -33,7 +33,7 @@ module.exports = env => {
     const homePagePath = '/overview';
     const serverHost = 'https://localhost:9443';
     const clientHost = (env.NODE_ENV === 'prod') ? serverHost : `https://localhost:${devServerPort}`;
-    const externalLoginClientID = (env.NODE_ENV === 'prod') ? 'ADMIN_PORTAL' : 'ADMIN_PORTAL';
+    const externalLoginClientID = (env.NODE_ENV === 'prod') ? 'ADMIN_PORTAL' : 'D7OJxMEcEZeM1tqgaz0VnsMKJe4a';
     const externalLoginCallbackURL = `${clientHost}/${basename}/login`;
     const externalLogoutCallbackURL = `${clientHost}/${basename}/logout`;
 

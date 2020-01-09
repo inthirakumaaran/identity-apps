@@ -32,6 +32,7 @@ import { InnerPageLayout } from "../layouts";
 export const HomePage = (): JSX.Element => {
     const { t } = useTranslation();
     return (
+
         <InnerPageLayout
             pageTitle={ t(
                 "views:overviewPage.title",
@@ -39,7 +40,6 @@ export const HomePage = (): JSX.Element => {
                 ) }
             pageDescription={ t("views:overviewPage.subTitle") }
             pageTitleTextAlign="left"
-        >
-        </InnerPageLayout>
+        />
     );
 };

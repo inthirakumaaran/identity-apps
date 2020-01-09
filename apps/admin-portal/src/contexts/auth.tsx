@@ -38,7 +38,7 @@ const AuthProvider = ({ children }) => {
      * Update authentication state on app load
      */
     useEffect(() => {
-        signIn();
+        // signIn();
     }, []);
 
     /**

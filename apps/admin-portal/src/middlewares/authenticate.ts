@@ -49,7 +49,7 @@ export const handleSignIn = (state, dispatch) => {
             clientSecret: null,
             enablePKCE: true,
             redirectUri: LOGIN_CALLBACK_URL,
-            scope: null,
+            scope: ["internal_identity_mgt_view" , "internal_identity_mgt_update", "internal_identity_mgt_create" , "internal_identity_mgt_delete"]
         };
         if (SignInUtil.hasAuthorizationCode()) {
             SignInUtil.sendTokenRequest(requestParams)

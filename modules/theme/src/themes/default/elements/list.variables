@@ -27,3 +27,7 @@
 
 /* List Padding */
 @settingsSectionInnerListHeaderPaddingLeft: 37px;
+@borderNewBgColor: #f7f7f7;
+@borderNewPadding: 6px 15px;
+@borderNewMarginBottom: 9px;
+@borderNewBoxShadow: 2px 1px 1px #ccc;

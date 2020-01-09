@@ -17,14 +17,19 @@
  */
 
 import {
+    AddAppPage,
+    ApplicationPage,
+    ApplistingPage,
     HomePage,
-    PageNotFound
+    PageNotFound,
+    SelectAppPage
 } from "../pages";
 
 /**
  * Interface to handle route types.
  */
 interface Route {
+    exact: any;
     component: any;
     icon?: string;
     name: string;
@@ -43,13 +48,51 @@ const ROUTES: Route[] = [
         name: "Overview",
         path: "/overview",
         protected: true,
+        exact: false,
         showOnSidePanel: true,
+    },
+    {
+        component: ApplicationPage,
+        icon: "account",
+        name: "Applications",
+        path: "/application",
+        protected: true,
+        exact: true,
+        showOnSidePanel: true,
+    },
+    {
+        component: ApplistingPage,
+        icon: "account",
+        name: "Application-listing",
+        path: "/application/:id",
+        protected: true,
+        exact: true,
+        showOnSidePanel: false,
+    },
+    {
+        component: SelectAppPage,
+        icon: "account",
+        name: "Select New App type",
+        path: "/application/new/template",
+        protected: true,
+        exact: true,
+        showOnSidePanel: false,
+    },
+    {
+        component: AddAppPage,
+        icon: "account",
+        name: "Register New app",
+        path: "/application/new/:id",
+        protected: true,
+        exact: true,
+        showOnSidePanel: false,
     },
     {
         component: PageNotFound,
         name: "404",
         path: null,
         protected: true,
+        exact: false,
         showOnSidePanel: false,
     },
 ];

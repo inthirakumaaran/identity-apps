@@ -46,14 +46,17 @@ const App = () =>  {
                         } */}
                         <Switch>
                             <Redirect exact path="/" to={APP_LOGIN_PATH} />
+                            {/* tslint:disable-next-line:jsx-alignment */}
                             <Route path={APP_LOGIN_PATH} render={() => {
                                 signIn();
                                 return null;
-                            }} />
+                                // tslint:disable-next-line:jsx-alignment
+                            } } />
                             <Route path="/logout" render={() => {
                                 signOut();
                                 return null;
-                            }} />
+                                // tslint:disable-next-line:jsx-alignment
+                            } } />
                             {
                                 routes.map((route, index) => {
                                     return (
@@ -61,6 +64,7 @@ const App = () =>  {
                                             (
                                                 <ProtectedRoute
                                                     component={ route.component }
+                                                    exact={ route.exact }
                                                     path={ route.path }
                                                     key={ index }
                                                 />

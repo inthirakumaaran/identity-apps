@@ -3,6 +3,10 @@
         "title": "Welcome, {{firstName}}",
         "subTitle": "Manage and configure your user settings to customize the Identity Server experience"
     },
+    "applicationPage": {
+        "title": "Application",
+        "subTitle": "Manage your applications here"
+    },
     "404": {
         "title": "It looks like you're lost. :(",
         "subTitle": "The page you're looking for isn't here."

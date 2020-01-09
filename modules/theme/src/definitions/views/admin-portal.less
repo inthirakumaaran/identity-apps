@@ -1,0 +1,42 @@
+.wizard-steps {
+  li {
+    width: 4em;
+    height: 4em;
+    text-align: center;
+    line-height: 4em;
+    border-radius: 2em;
+    background: #ff8953;
+    margin: 0 4em;
+    display: inline-block;
+    color: white;
+    position: relative;
+  }
+
+  li::before{
+    content: '';
+    position: absolute;
+    top: 1.7em;
+    left: -8em;
+    width: 8em;
+    height: 0.5em;
+    background: #ff8953;
+    z-index: -1;
+  }
+
+
+  li:first-child::before {
+    display: none;
+  }
+
+  .active {
+    background: #ff8953;
+  }
+
+  .active ~ li {
+    background: #fbcbb5;
+  }
+
+  .active ~ li::before {
+    background: #fbcbb5;
+  }
+}

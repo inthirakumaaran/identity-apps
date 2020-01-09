@@ -176,4 +176,20 @@
             }
         }
     }
+    &.advance-settings-card {
+             .advance-settings {
+                   .endpoint-row {
+                     position: relative;
+                     display: flex;
+                     flex-direction: row;
+                     flex-wrap: wrap;
+                     justify-content: inherit;
+                     align-items: stretch;
+                     width: 100% !important;
+                     padding: 0rem;
+                     padding-top: 0.5rem;
+                     padding-bottom: 0.5rem;
+                   }
+             }
+    }
 }
